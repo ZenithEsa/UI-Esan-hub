@@ -1,221 +1,239 @@
+--// EsanUI - Part 1: Core UI Setup Module
 local UserInputService = game:GetService("UserInputService")
 
 local EsanUI = {}
-
--- Helper: Create UI Element
-local function Create(class, props)
-	local inst = Instance.new(class)
-	for k, v in pairs(props) do
-		inst[k] = v
-	end
-	return inst
-end
 
 function EsanUI:CreateUI(settings)
 	settings = settings or {}
 
 	local theme = settings.Theme or {
-		Primary = Color3.fromRGB(45, 45, 45),
+		Primary = Color3.fromRGB(40, 40, 40),
 		Accent = Color3.fromRGB(255, 255, 255)
 	}
 
-	--== Screen & Main Frame ==--
-	local gui = Create("ScreenGui", {
-		Name = "EsanUI",
-		Parent = game:GetService("CoreGui"),
-		ResetOnSpawn = false,
-		IgnoreGuiInset = true,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	})
+	--== ScreenGui ==--
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "EsanUI"
+	gui.ResetOnSpawn = false
+	gui.IgnoreGuiInset = true
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	gui.Parent = game:GetService("CoreGui")
 
-	local main = Create("Frame", {
-		Name = "MainFrame",
-		Size = UDim2.new(0, 600, 0, 420),
-		Position = UDim2.new(0.5, -300, 0.5, -210),
-		BackgroundColor3 = theme.Primary,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Parent = gui
-	})
-	Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = main })
+	--== Main Frame ==--
+	local main = Instance.new("Frame")
+	main.Name = "MainFrame"
+	main.Size = UDim2.new(0, 600, 0, 420)
+	main.Position = UDim2.new(0.5, -300, 0.5, -210)
+	main.AnchorPoint = Vector2.new(0.5, 0.5)
+	main.BackgroundColor3 = theme.Primary
+	main.BorderSizePixel = 0
+	main.Parent = gui
 
-	local topBar = Create("Frame", {
-		Size = UDim2.new(1, 0, 0, 40),
-		BackgroundTransparency = 1,
-		Parent = main
-	})
-	local logo = Create("ImageLabel", {
-		Size = UDim2.new(0, 32, 0, 32),
-		Position = UDim2.new(0, 8, 0.5, -16),
-		Image = "rbxassetid://" .. tostring(settings.Logo or 0),
-		BackgroundTransparency = 1,
-		Parent = topBar
-	})
-	local title = Create("TextLabel", {
-		Size = UDim2.new(1, -50, 1, 0),
-		Position = UDim2.new(0, 50, 0, 0),
-		BackgroundTransparency = 1,
-		Text = settings.Name or "Esan Hub",
-		Font = Enum.Font.GothamBold,
-		TextSize = 20,
-		TextColor3 = theme.Accent,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Parent = topBar
-	})
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 10)
+	corner.Parent = main
 
-	-- Dragging
-	do
-		local dragging, dragInput, start, startPos
-		local function update(input)
-			local delta = input.Position - start
-			main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	--== TopBar (Title & Logo) ==--
+	local topBar = Instance.new("Frame")
+	topBar.Size = UDim2.new(1, 0, 0, 40)
+	topBar.BackgroundTransparency = 1
+	topBar.Parent = main
+
+	local logo = Instance.new("ImageLabel")
+	logo.Size = UDim2.new(0, 32, 0, 32)
+	logo.Position = UDim2.new(0, 8, 0.5, -16)
+	logo.BackgroundTransparency = 1
+	logo.Image = "rbxassetid://" .. tostring(settings.Logo or 0)
+	logo.Parent = topBar
+
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, -50, 1, 0)
+	title.Position = UDim2.new(0, 50, 0, 0)
+	title.BackgroundTransparency = 1
+	title.Text = settings.Name or "Esan Hub"
+	title.Font = Enum.Font.GothamBold
+	title.TextSize = 20
+	title.TextColor3 = theme.Accent
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.Parent = topBar
+
+	--== Drag Main Frame ==--
+	local dragging = false
+	local dragStart, startPos
+
+	main.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			dragStart = input.Position
+			startPos = main.Position
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
 		end
-		main.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				dragging = true
-				start = input.Position
-				startPos = main.Position
-				input.Changed:Connect(function()
-					if input.UserInputState == Enum.UserInputState.End then dragging = false end
-				end)
-			end
-		end)
-		main.InputChanged:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseMovement then
-				dragInput = input
-			end
-		end)
-		UserInputService.InputChanged:Connect(function(input)
-			if input == dragInput and dragging then update(input) end
-		end)
-	end
+	end)
 
-	--== Toggle Button (Circle) ==--
-	local toggleBtn = Create("ImageButton", {
-		Size = UDim2.new(0, 50, 0, 50),
-		Position = UDim2.new(0.5, 300, 0.5, -200),
-		Image = "rbxassetid://3926305904",
-		ImageRectOffset = Vector2.new(284, 4),
-		ImageRectSize = Vector2.new(36, 36),
-		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-		Parent = gui
-	})
-	Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = toggleBtn })
+	main.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			input.Changed:Connect(function()
+				if dragging then
+					local delta = input.Position - dragStart
+					main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+				end
+			end)
+		end
+	end)
+
+	--== Toggle Button (วงกลม) ==--
+	local toggleButton = Instance.new("ImageButton")
+	toggleButton.Size = UDim2.new(0, 50, 0, 50)
+	toggleButton.Position = UDim2.new(0.5, 310, 0.5, -200)
+	toggleButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	toggleButton.Image = "rbxassetid://3926305904"
+	toggleButton.ImageRectOffset = Vector2.new(284, 4)
+	toggleButton.ImageRectSize = Vector2.new(36, 36)
+	toggleButton.Parent = gui
+
+	local circleCorner = Instance.new("UICorner")
+	circleCorner.CornerRadius = UDim.new(1, 0)
+	circleCorner.Parent = toggleButton
 
 	local uiVisible = true
 	local function toggleUI()
 		uiVisible = not uiVisible
 		main.Visible = uiVisible
 	end
-	toggleBtn.MouseButton1Click:Connect(toggleUI)
-	UserInputService.InputBegan:Connect(function(input, gp)
-		if not gp and input.KeyCode == (settings.DefaultKey or Enum.KeyCode.LeftAlt) then
+
+	toggleButton.MouseButton1Click:Connect(toggleUI)
+
+	--== Drag Toggle Button ==--
+	local toggleDragging = false
+	local toggleStart, toggleStartPos
+
+	toggleButton.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			toggleDragging = true
+			toggleStart = input.Position
+			toggleStartPos = toggleButton.Position
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					toggleDragging = false
+				end
+			end)
+		end
+	end)
+
+	toggleButton.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			input.Changed:Connect(function()
+				if toggleDragging then
+					local delta = input.Position - toggleStart
+					toggleButton.Position = UDim2.new(toggleStartPos.X.Scale, toggleStartPos.X.Offset + delta.X, toggleStartPos.Y.Scale, toggleStartPos.Y.Offset + delta.Y)
+				end
+			end)
+		end
+	end)
+
+	--== Keybind Toggle ==--
+	UserInputService.InputBegan:Connect(function(input, gpe)
+		if not gpe and input.KeyCode == (settings.DefaultKey or Enum.KeyCode.LeftAlt) then
 			toggleUI()
 		end
 	end)
 
-	-- Drag toggle button
-	do
-		local dragging, dragInput, start, startPos
-		toggleBtn.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				dragging = true
-				start = input.Position
-				startPos = toggleBtn.Position
-				input.Changed:Connect(function()
-					if input.UserInputState == Enum.UserInputState.End then dragging = false end
-				end)
-			end
-		end)
-		toggleBtn.InputChanged:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseMovement then
-				dragInput = input
-			end
-		end)
-		UserInputService.InputChanged:Connect(function(input)
-			if input == dragInput and dragging then
-				local delta = input.Position - start
-				toggleBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-			end
-		end)
-	end
+	--== คืนค่าเพื่อใช้ใน Part ถัดไป ==--
+	return {
+		Gui = gui,
+		Main = main,
+		Theme = theme
+	}
+end
 
-	--== Tab Management ==--
+return EsanUI
+
+local function InitTabs(main, theme)
 	local tabButtons = {}
 	local tabFrames = {}
 
-	local tabBar = Create("Frame", {
-		Size = UDim2.new(1, 0, 0, 30),
-		Position = UDim2.new(0, 0, 0, 40),
-		BackgroundTransparency = 1,
-		Parent = main
-	})
+	--== Tab Bar ==--
+	local tabBar = Instance.new("Frame")
+	tabBar.Size = UDim2.new(1, 0, 0, 30)
+	tabBar.Position = UDim2.new(0, 0, 0, 40)
+	tabBar.BackgroundTransparency = 1
+	tabBar.Name = "TabBar"
+	tabBar.Parent = main
 
-	local content = Create("Frame", {
-		Size = UDim2.new(1, 0, 1, -70),
-		Position = UDim2.new(0, 0, 0, 70),
-		BackgroundTransparency = 1,
-		Parent = main
-	})
+	local contentHolder = Instance.new("Frame")
+	contentHolder.Name = "ContentHolder"
+	contentHolder.Size = UDim2.new(1, 0, 1, -70)
+	contentHolder.Position = UDim2.new(0, 0, 0, 70)
+	contentHolder.BackgroundTransparency = 1
+	contentHolder.Parent = main
 
-	local function switchTab(name)
-		for tabName, tab in pairs(tabFrames) do
-			tab.Visible = (tabName == name)
-			tabButtons[tabName].BackgroundTransparency = tab.Visible and 0 or 0.4
+	local function switchTab(tabName)
+		for name, frame in pairs(tabFrames) do
+			local isActive = name == tabName
+			frame.Visible = isActive
+			tabButtons[name].BackgroundTransparency = isActive and 0 or 0.5
 		end
 	end
 
 	local function createsection(tabInfo)
-		local tabName = tabInfo.Title
-		local btn = Create("TextButton", {
-			Size = UDim2.new(0, 100, 1, 0),
-			Text = tabName,
-			BackgroundColor3 = theme.Accent,
-			TextColor3 = Color3.fromRGB(0, 0, 0),
-			Font = Enum.Font.Gotham,
-			TextSize = 14,
-			Parent = tabBar
-		})
-		btn.Position = UDim2.new(0, (#tabButtons * 110), 0, 0)
-		tabButtons[tabName] = btn
+		local title = tabInfo.Title or "Untitled"
+		local tabBtn = Instance.new("TextButton")
+		tabBtn.Size = UDim2.new(0, 100, 1, 0)
+		tabBtn.BackgroundColor3 = theme.Accent
+		tabBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+		tabBtn.Font = Enum.Font.Gotham
+		tabBtn.TextSize = 14
+		tabBtn.Text = title
+		tabBtn.Parent = tabBar
+		tabBtn.Position = UDim2.new(0, (#tabButtons * 105), 0, 0)
 
-		local frame = Create("Frame", {
-			Size = UDim2.new(1, 0, 1, 0),
-			BackgroundTransparency = 1,
-			Visible = false,
-			Parent = content
-		})
-		tabFrames[tabName] = frame
+		tabButtons[title] = tabBtn
 
-		btn.MouseButton1Click:Connect(function()
-			switchTab(tabName)
+		local tabContent = Instance.new("Frame")
+		tabContent.Name = title .. "_Frame"
+		tabContent.Size = UDim2.new(1, 0, 1, 0)
+		tabContent.BackgroundTransparency = 1
+		tabContent.Visible = false
+		tabContent.Parent = contentHolder
+
+		tabFrames[title] = tabContent
+
+		tabBtn.MouseButton1Click:Connect(function()
+			switchTab(title)
 		end)
 
-		-- Auto switch to first
-		if #content:GetChildren() == 1 then
-			switchTab(tabName)
+		if #contentHolder:GetChildren() == 1 then
+			switchTab(title)
 		end
 
 		local section = {}
 
 		function section.createpage(pageInfo)
 			local side = pageInfo.Side or 1
-			local container = Create("ScrollingFrame", {
-				Size = UDim2.new(0.5, -10, 1, 0),
-				Position = side == 1 and UDim2.new(0, 0, 0, 0) or UDim2.new(0.5, 10, 0, 0),
-				CanvasSize = UDim2.new(0, 0, 0, 0),
-				ScrollBarThickness = 4,
-				AutomaticCanvasSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
-				Parent = frame
-			})
-			local layout = Instance.new("UIListLayout", container)
+			local pageFrame = Instance.new("ScrollingFrame")
+			pageFrame.Size = UDim2.new(0.5, -10, 1, 0)
+			pageFrame.Position = side == 1 and UDim2.new(0, 0, 0, 0) or UDim2.new(0.5, 10, 0, 0)
+			pageFrame.BackgroundTransparency = 1
+			pageFrame.ScrollBarThickness = 5
+			pageFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+			pageFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+			pageFrame.Parent = tabContent
+
+			local layout = Instance.new("UIListLayout")
 			layout.Padding = UDim.new(0, 6)
 			layout.SortOrder = Enum.SortOrder.LayoutOrder
+			layout.Parent = pageFrame
 
 			local page = {}
 
-			function page.Add(instance)
-				instance.Parent = container
+			function page:Add(instance)
+				instance.Parent = pageFrame
 			end
 
 			return page
@@ -224,57 +242,79 @@ function EsanUI:CreateUI(settings)
 		return section
 	end
 
-	local public = {}
-	function public.createsection(data)
-		return createsection(data)
-	end
-
-	return public
+	return createsection
 end
 
-return EsanUI
+-- Part 3 ต้องเรียกหลังจาก createpage แล้ว
+-- ต้องมี page:Add(instance) จาก Part 2 ด้วย
 
-function page.Toggle(info)
-	local state = info.Default or false
+local HttpService = game:GetService("HttpService")
+local SaveFile = "esanui_config.json"
 
-	local toggle = Instance.new("TextButton")
-	toggle.Size = UDim2.new(1, -10, 0, 30)
-	toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	toggle.TextColor3 = Color3.new(1,1,1)
-	toggle.Font = Enum.Font.Gotham
-	toggle.TextSize = 14
-	toggle.Text = (state and "✔ " or "✖ ") .. info.Title
-	toggle.AutoButtonColor = false
+local savedata = {}
+local function loadData()
+	if isfile and isfile(SaveFile) then
+		local ok, data = pcall(function()
+			return HttpService:JSONDecode(readfile(SaveFile))
+		end)
+		if ok and type(data) == "table" then
+			savedata = data
+		end
+	end
+end
 
-	toggle.MouseButton1Click:Connect(function()
+local function saveData()
+	if writefile then
+		local json = HttpService:JSONEncode(savedata)
+		writefile(SaveFile, json)
+	end
+end
+
+loadData()
+
+-- Attach to page
+function page:Toggle(info)
+	local state = savedata[info.Title] or info.Default or false
+
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, -10, 0, 30)
+	btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Font = Enum.Font.Gotham
+	btn.TextSize = 14
+	btn.Text = (state and "✔ " or "✖ ") .. info.Title
+	btn.AutoButtonColor = false
+
+	btn.MouseButton1Click:Connect(function()
 		state = not state
-		toggle.Text = (state and "✔ " or "✖ ") .. info.Title
+		btn.Text = (state and "✔ " or "✖ ") .. info.Title
+		savedata[info.Title] = state
+		saveData()
 		if info.Callback then info.Callback(state) end
 	end)
 
-	page.Add(toggle)
+	self:Add(btn)
 end
 
-function page.Button(info)
+function page:Button(info)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(1, -10, 0, 30)
-	btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-	btn.TextColor3 = Color3.new(1,1,1)
+	btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	btn.TextColor3 = Color3.new(1, 1, 1)
 	btn.Font = Enum.Font.Gotham
 	btn.TextSize = 14
-	btn.Text = info.Title
-	btn.AutoButtonColor = true
+	btn.Text = info.Title or "Button"
 
 	btn.MouseButton1Click:Connect(function()
 		if info.Callback then info.Callback() end
 	end)
 
-	page.Add(btn)
+	self:Add(btn)
 end
 
-function page.Slider(info)
+function page:Slider(info)
 	local min, max = info.Min or 0, info.Max or 100
-	local value = info.Default or min
+	local val = savedata[info.Title] or info.Default or min
 
 	local container = Instance.new("Frame")
 	container.Size = UDim2.new(1, -10, 0, 50)
@@ -282,90 +322,99 @@ function page.Slider(info)
 
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.new(1, 0, 0, 20)
-	label.Position = UDim2.new(0, 0, 0, 0)
 	label.BackgroundTransparency = 1
+	label.TextColor3 = Color3.new(1, 1, 1)
 	label.Font = Enum.Font.Gotham
 	label.TextSize = 14
-	label.TextColor3 = Color3.new(1,1,1)
 	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Text = info.Title .. ": " .. tostring(value)
+	label.Text = info.Title .. ": " .. tostring(val)
 	label.Parent = container
 
-	local sliderBack = Instance.new("Frame")
-	sliderBack.Size = UDim2.new(1, 0, 0, 20)
-	sliderBack.Position = UDim2.new(0, 0, 0, 25)
-	sliderBack.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-	sliderBack.Parent = container
-	Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = sliderBack })
+	local bar = Instance.new("Frame")
+	bar.Size = UDim2.new(1, 0, 0, 18)
+	bar.Position = UDim2.new(0, 0, 0, 25)
+	bar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	bar.Parent = container
+	Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 4)
 
-	local sliderFill = Instance.new("Frame")
-	sliderFill.Size = UDim2.new((value - min)/(max - min), 0, 1, 0)
-	sliderFill.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-	sliderFill.Parent = sliderBack
-	Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = sliderFill })
+	local fill = Instance.new("Frame")
+	fill.Size = UDim2.new((val - min)/(max - min), 0, 1, 0)
+	fill.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+	fill.Parent = bar
+	Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 4)
 
-	local textbox = Instance.new("TextBox")
-	textbox.Size = UDim2.new(0, 50, 0, 20)
-	textbox.Position = UDim2.new(1, 10, 0, 25)
-	textbox.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-	textbox.Font = Enum.Font.Gotham
-	textbox.TextSize = 14
-	textbox.TextColor3 = Color3.new(1,1,1)
-	textbox.Text = tostring(value)
-	textbox.Parent = container
+	local inputBox = Instance.new("TextBox")
+	inputBox.Size = UDim2.new(0, 50, 0, 20)
+	inputBox.Position = UDim2.new(1, 10, 0, 25)
+	inputBox.Text = tostring(val)
+	inputBox.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	inputBox.Font = Enum.Font.Gotham
+	inputBox.TextSize = 14
+	inputBox.TextColor3 = Color3.new(1, 1, 1)
+	inputBox.Parent = container
+	Instance.new("UICorner", inputBox)
 
-	Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = textbox })
-
-	-- Dragging
 	local dragging = false
-	local function updateSlider(x)
-		local rel = math.clamp((x - sliderBack.AbsolutePosition.X) / sliderBack.AbsoluteSize.X, 0, 1)
-		value = math.floor((min + (max - min) * rel) + 0.5)
-		sliderFill.Size = UDim2.new(rel, 0, 1, 0)
-		textbox.Text = tostring(value)
-		label.Text = info.Title .. ": " .. tostring(value)
-		if info.Callback then info.Callback(value) end
+	local function update(x)
+		local rel = math.clamp((x - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+		val = math.floor(min + (max - min) * rel + 0.5)
+		label.Text = info.Title .. ": " .. tostring(val)
+		inputBox.Text = tostring(val)
+		fill.Size = UDim2.new(rel, 0, 1, 0)
+		savedata[info.Title] = val
+		saveData()
+		if info.Callback then info.Callback(val) end
 	end
 
-	sliderBack.InputBegan:Connect(function(input)
+	bar.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			dragging = true
-			updateSlider(input.Position.X)
+			update(input.Position.X)
 		end
 	end)
-	UserInputService.InputChanged:Connect(function(input)
+	game:GetService("UserInputService").InputChanged:Connect(function(input)
 		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-			updateSlider(input.Position.X)
+			update(input.Position.X)
 		end
 	end)
-	UserInputService.InputEnded:Connect(function(input)
+	game:GetService("UserInputService").InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			dragging = false
 		end
 	end)
 
-	-- Type in textbox
-	textbox.FocusLost:Connect(function()
-		local num = tonumber(textbox.Text)
-		if num then
-			num = math.clamp(math.floor(num + 0.5), min, max)
-			value = num
-			local rel = (value - min) / (max - min)
-			sliderFill.Size = UDim2.new(rel, 0, 1, 0)
-			label.Text = info.Title .. ": " .. tostring(value)
-			textbox.Text = tostring(value)
-			if info.Callback then info.Callback(value) end
+	inputBox.FocusLost:Connect(function()
+		local number = tonumber(inputBox.Text)
+		if number then
+			val = math.clamp(number, min, max)
+			fill.Size = UDim2.new((val - min) / (max - min), 0, 1, 0)
+			label.Text = info.Title .. ": " .. tostring(val)
+			savedata[info.Title] = val
+			saveData()
+			if info.Callback then info.Callback(val) end
 		else
-			textbox.Text = tostring(value)
+			inputBox.Text = tostring(val)
 		end
 	end)
 
-	page.Add(container)
+	self:Add(container)
 end
 
--- เพิ่ม Dropdown
-function page.Dropdown(info)
-	local selected = info.Default and info.Default[1] or info.List[1]
+function page:Label(text)
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -10, 0, 20)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = Color3.new(1, 1, 1)
+	label.Font = Enum.Font.Gotham
+	label.TextSize = 14
+	label.Text = text
+	label.TextXAlignment = Enum.TextXAlignment.Left
+
+	self:Add(label)
+end
+
+function page:Dropdown(info)
+	local selected = (savedata[info.Title] or info.Default or {info.List[1]})[1]
 	local isOpen = false
 
 	local container = Instance.new("Frame")
@@ -374,23 +423,24 @@ function page.Dropdown(info)
 
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(1, 0, 0, 30)
-	btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-	btn.TextColor3 = Color3.new(1,1,1)
+	btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+	btn.TextColor3 = Color3.new(1, 1, 1)
 	btn.Font = Enum.Font.Gotham
 	btn.TextSize = 14
 	btn.Text = info.Title .. ": " .. selected
 	btn.Parent = container
 
-	local listFrame = Instance.new("Frame")
-	listFrame.Size = UDim2.new(1, 0, 0, #info.List * 25)
-	listFrame.Position = UDim2.new(0, 0, 1, 0)
-	listFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-	listFrame.Visible = false
-	listFrame.Parent = container
+	local dropFrame = Instance.new("Frame")
+	dropFrame.Size = UDim2.new(1, 0, 0, #info.List * 25)
+	dropFrame.Position = UDim2.new(0, 0, 1, 0)
+	dropFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	dropFrame.Visible = false
+	dropFrame.Parent = container
 
-	local UIListLayout = Instance.new("UIListLayout", listFrame)
-	UIListLayout.FillDirection = Enum.FillDirection.Vertical
-	UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Vertical
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = dropFrame
 
 	for _, item in ipairs(info.List) do
 		local opt = Instance.new("TextButton")
@@ -398,152 +448,35 @@ function page.Dropdown(info)
 		opt.Text = item
 		opt.Font = Enum.Font.Gotham
 		opt.TextSize = 14
-		opt.TextColor3 = Color3.new(1,1,1)
-		opt.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-		opt.Parent = listFrame
+		opt.TextColor3 = Color3.new(1, 1, 1)
+		opt.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+		opt.Parent = dropFrame
 
 		opt.MouseButton1Click:Connect(function()
 			selected = item
 			btn.Text = info.Title .. ": " .. selected
-			listFrame.Visible = false
+			dropFrame.Visible = false
 			isOpen = false
+			savedata[info.Title] = {selected}
+			saveData()
 			if info.Callback then info.Callback({selected}) end
 		end)
 	end
 
 	btn.MouseButton1Click:Connect(function()
 		isOpen = not isOpen
-		listFrame.Visible = isOpen
+		dropFrame.Visible = isOpen
 	end)
 
-	page.Add(container)
+	self:Add(container)
 end
 
--- เพิ่ม Label
-function page.Label(text)
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, -10, 0, 20)
-	label.BackgroundTransparency = 1
-	label.TextColor3 = Color3.new(1,1,1)
-	label.Font = Enum.Font.Gotham
-	label.TextSize = 14
-	label.Text = text
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	page.Add(label)
-end
-
-function page.ColorPicker(info)
-	local selected = info.Default or Color3.new(1,1,1)
-
-	local container = Instance.new("Frame")
-	container.Size = UDim2.new(1, -10, 0, 30)
-	container.BackgroundTransparency = 1
-
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(0.5, 0, 1, 0)
-	label.Text = info.Title or "Color"
-	label.TextColor3 = Color3.new(1,1,1)
-	label.BackgroundTransparency = 1
-	label.Font = Enum.Font.Gotham
-	label.TextSize = 14
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Parent = container
-
-	local colorBtn = Instance.new("TextButton")
-	colorBtn.Size = UDim2.new(0.5, -5, 1, 0)
-	colorBtn.Position = UDim2.new(0.5, 5, 0, 0)
-	colorBtn.BackgroundColor3 = selected
-	colorBtn.Text = ""
-	colorBtn.Parent = container
-
-	colorBtn.MouseButton1Click:Connect(function()
-		local picked = game:GetService("StarterGui"):PromptColor()
-		if picked then
-			selected = picked
-			colorBtn.BackgroundColor3 = selected
-			if info.Callback then info.Callback(selected) end
-		end
-	end)
-
-	page.Add(container)
-end
-
-local HttpService = game:GetService("HttpService")
-local SaveFile = "esanui_config.json"
-
-local EsanUI = {}
-
-local settingsStore = {}
-
-function EsanUI:CreateUI(settings)
-	settings = settings or {}
-
-	local UI = MainUI:Create(settings)
-	Toggle:Create(UI, settings.DefaultKey)
-
-	settingsStore._ref = UI
-	settingsStore._data = {}
-	settingsStore._disable = settings.DisableSave or false
-	settingsStore._autosave = settings.AutoSave ~= false
-
-	if not settingsStore._disable then
-		EsanUI:Load()
-	end
-
-	return UI
-end
-
-function EsanUI:Set(name, value)
-	if settingsStore._disable then return end
-	settingsStore._data[name] = value
-	if settingsStore._autosave then
-		EsanUI:Save()
-	end
-end
-
-function EsanUI:Get(name, default)
-	return settingsStore._data[name] or default
-end
-
-function EsanUI:Save()
-	if writefile then
-		local json = HttpService:JSONEncode(settingsStore._data)
-		writefile(SaveFile, json)
-	end
-end
-
-function EsanUI:Load()
-	if isfile and isfile(SaveFile) then
-		local success, data = pcall(function()
-			return HttpService:JSONDecode(readfile(SaveFile))
-		end)
-		if success and typeof(data) == "table" then
-			settingsStore._data = data
+game:GetService("UserInputService").InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		for _, obj in ipairs(game:GetService("CoreGui"):GetDescendants()) do
+			if obj:IsA("Frame") and obj.Name == "DropFrame" then
+				obj.Visible = false
+			end
 		end
 	end
-end
-
-return EsanUI
-
-function page.Toggle(info)
-	local state = EsanUI:Get(info.Title, info.Default or false)
-
-	local toggle = Instance.new("TextButton")
-	toggle.Text = (state and "✔ " or "✖ ") .. info.Title
-	-- ...
-
-	toggle.MouseButton1Click:Connect(function()
-		state = not state
-		toggle.Text = (state and "✔ " or "✖ ") .. info.Title
-		EsanUI:Set(info.Title, state)
-		if info.Callback then info.Callback(state) end
-	end)
-
-	page.Add(toggle)
-end
-
-function page.Slider(info)
-	local min, max = info.Min or 0, info.Max or 100
-	local value = EsanUI:Get(info.Title, info.Default or min)
-	-- ...
-end
+end)
